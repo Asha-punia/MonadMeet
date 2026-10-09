@@ -12,12 +12,19 @@ contract MeetingManager {
     mapping(uint256 => mapping(address => bool)) public attended;
     mapping(uint256 => mapping(address => bool)) public decisionApproved;
 
+    function meetingExists(uint256 meetingId) internal view returns(bool) {
+        return meetingId > 0 && meetingId <= meetingCount;
+    }
     function createMeeting() public returns(uint256) {
         meetingCount++;
         meetingOwner[meetingCount] = msg.sender;
         return meetingCount;
     }
     function authorizeParticipant(uint256 meetingId, address participant) public {
+        require(
+            meetingExists(meetingId),
+            "Meeting does not exist"
+        );
         require(
             meetingOwner[meetingId] == msg.sender,
             "Only meeting owner can authorize"

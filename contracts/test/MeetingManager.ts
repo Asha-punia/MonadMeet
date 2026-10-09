@@ -214,4 +214,16 @@ describe("MeetingManager", function () {
 
     expect(await meetingManager.meetingProof(1)).to.equal(firstProof);
   });
+  it("Should prevent authorizing participants for a nonexistent meeting", async function () {
+    const [owner, participant] = await ethers.getSigners();
+    const MeetingManager = await ethers.getContractFactory("MeetingManager");
+    const meetingManager = await MeetingManager.deploy();
+
+    try {
+      await meetingManager.authorizeParticipant(99, participant.address);
+      expect.fail("Expected nonexistent meeting authorization to revert");
+    } catch (error) {
+      expect(String(error)).to.include("Meeting does not exist");
+    }
+  });
 });
