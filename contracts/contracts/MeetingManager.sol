@@ -26,6 +26,10 @@ contract MeetingManager {
             "Meeting does not exist"
         );
         require(
+            !meetingClosed[meetingId],
+            "Meeting is already closed"
+        );
+        require(
             meetingOwner[meetingId] == msg.sender,
             "Only meeting owner can authorize"
         );

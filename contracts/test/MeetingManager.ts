@@ -226,4 +226,17 @@ describe("MeetingManager", function () {
       expect(String(error)).to.include("Meeting does not exist");
     }
   });
+  it("Should prevent the owner to authorize a participant after closing a meeting", async function() {
+    const [owner, participant] = await ethers.getSigners();
+    const MeetingManager = await ethers.getContractFactory("MeetingManager");
+    const meetingManager = await MeetingManager.deploy();
+    await meetingManager.createMeeting();
+    await meetingManager.closeMeeting(1);
+    try{
+      await meetingManager.authorizeParticipant(1, participant.address);
+      expect.fail("Owner able to authorize participant after closing a meeting");
+    }catch(error) {
+      expect(String(error)).to.include("Meeting is already closed");
+    }
+  });
 });
