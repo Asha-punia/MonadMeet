@@ -1,0 +1,40 @@
+import { Server } from "socket.io";
+
+const connectToSocket = (server) => {
+    const io = new Server(server, {
+        cors : {
+            origin: "*",
+            methods: ["GET", "POST"]
+        }
+    });
+    io.on("connection", (socket) => {
+        console.log("User Connected!", socket.id);
+        socket.on("offer", (offer) => {
+            socket.to(socket.roomId).emit("offer", offer);
+        });
+        socket.on("answer", (answer) => {
+            socket.to(socket.roomId).emit("answer", answer);
+        });
+        socket.on("ice-candidate", (candidate) => {
+            socket.to(socket.roomId).emit("ice-candidate", candidate);
+        });
+        socket.on("room-id", (roomId) => {
+            socket.join(roomId);
+            socket.roomId = roomId;
+            socket.to(roomId).emit("user-joined");
+            console.log(`${socket.id} joins with ${roomId}`);
+        });
+        socket.on("chat-message", (data) => {
+            console.log("message received on server!");
+            io.to(socket.roomId).emit("chat-message", data);
+        });
+        socket.on("disconnect", () => {
+            socket.to(socket.roomId).emit("user-disconnected");
+            console.log("User Disconnected!");
+        });
+
+    });
+    return io;
+}
+
+export default connectToSocket;

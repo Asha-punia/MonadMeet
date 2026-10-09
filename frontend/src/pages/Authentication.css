@@ -1,0 +1,56 @@
+.auth-page-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+.authenticationContainer {
+    flex: 1;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    background: linear-gradient(135deg, #F5F7FA, #C3CFE2);
+    text-transform: none;
+}
+
+.authentication-card {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    gap: 20px;
+    padding: 40px;
+    width: 100%;
+    max-width: 420px;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 10px rgba(10, 10, 10, 0.2);
+}
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 20px;
+}
+
+.authenticationContainer .MuiButton-root {
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 1rem;
+    text-transform: none;
+}
+.authenticationContainer .MuiTextField-root fieldset{
+    border-radius: 12px;
+    border: 2px solid #d1d5db;
+}
+.authenticationContainer .MuiTextField-root:hover .MuiOutlinedInput-notchedOutline{
+    border: 2px solid #2563eb;
+}
+
+@media (max-width: 400px ) {
+    .authentication-card {
+        padding: 20px;
+    }   
+}
