@@ -12,7 +12,26 @@
     position: sticky;
     top: 0;
 }
-
+.wallet-error {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    background-color: #fef2f2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+    padding: 12px 20px;
+    font-size: 0.9rem;
+}
+.wallet-error-close {
+    border: none;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    padding: 2px;
+}
 .navbar-menu {
     display: flex;
     gap: 20px;
@@ -63,7 +82,19 @@
     background-color: #eff6ff;
     border-radius: 6px;
 }
-
+.navbar-menu .wallet-connect-btn {
+    text-decoration: none;
+    background-color: #2964e4;
+    padding: 10px 15px;
+    border-radius: 15px;
+    color: white;
+    font-weight: 600;
+    margin-left: 0;
+    white-space: nowrap;
+}
+.navbar-menu .wallet-connect-btn:hover {
+    background-color: #1c4ac7;
+}
 .navbar-menu .nav-btn {
     text-decoration: none;
     background-color: #2964e4;
