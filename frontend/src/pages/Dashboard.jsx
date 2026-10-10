@@ -1,17 +1,31 @@
-import { use, useContext, useState } from "react";
+import { useContext, useState } from "react";
 import { AuthContext } from "../context/AuthContext.jsx";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import "./Dashboard.css";
 import Navbar from "../components/Navbar.jsx";
 export default function dashboard() {
     const { user } = useContext(AuthContext);
     const navigate = useNavigate();
     let [roomId, setRoomId] = useState("");
-    const createMeeting = () => {
-        const roomId = Math.random().toString(36).substring(2, 10).toUpperCase();
-        console.log(`room id = ${roomId}`);
-        navigate(`/${roomId}`);
-    }
+    const createMeeting = async () => {
+        const newRoomId = Math.random().toString(36).substring(2, 10).toUpperCase();
+
+        try {
+            const token = localStorage.getItem("token");
+
+            await axios.post(
+                `${import.meta.env.VITE_API_URL}/api/v1/meetings`,
+                { meetingCode: newRoomId },
+                { headers: { authorization: token } }
+            );
+
+            navigate(`/${newRoomId}`);
+        } catch (error) {
+            console.error("Failed to save meeting:", error);
+            alert("Could not save the meeting. Please try again.");
+        }
+    };
     const joinMeeting = () => {
         if (!roomId.trim()) {
             alert("Please enter a meeting ID");

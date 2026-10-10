@@ -8,6 +8,7 @@ import mongoose from "mongoose";
 import connectToSocket from "./controllers/socketManager.js";
 import cors from "cors";
 import router from "./routes/users.js";
+import meetingRouter from "./routes/meetings.js";
 const dbUrl = process.env.MONGO_URL;
 
 const app = express();
@@ -19,6 +20,7 @@ app.use(cors());
 app.use(express.json({ limit : "40kb" }));
 app.use(express.urlencoded({ limit : "40kb" , extended: true}));
 app.use("/api/v1/users", router);
+app.use("/api/v1/meetings", meetingRouter);
 
 const start = async () => {
     const connectionDB = await mongoose.connect(dbUrl);
