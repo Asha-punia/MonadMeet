@@ -4,19 +4,28 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "./Dashboard.css";
 import Navbar from "../components/Navbar.jsx";
+import {createBlockchainMeeting} from "../blockchain/meetingContract.js";
 export default function dashboard() {
     const { user } = useContext(AuthContext);
     const navigate = useNavigate();
     let [roomId, setRoomId] = useState("");
+
     const createMeeting = async () => {
         const newRoomId = Math.random().toString(36).substring(2, 10).toUpperCase();
 
         try {
+            const blockchainMeeting = await createBlockchainMeeting();
+            console.log("Blockchain meeting created:", blockchainMeeting);
             const token = localStorage.getItem("token");
-
+            console.log("API URL:", import.meta.env.VITE_API_URL);
             await axios.post(
                 `${import.meta.env.VITE_API_URL}/api/v1/meetings`,
-                { meetingCode: newRoomId },
+                { 
+                    meetingCode: newRoomId,
+                    blockchainMeetingId: blockchainMeeting.meetingId,
+                    transactionHash: blockchainMeeting.transactionHash,
+                    walletAddress: blockchainMeeting.walletAddress,
+                },
                 { headers: { authorization: token } }
             );
 
