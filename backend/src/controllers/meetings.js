@@ -19,7 +19,8 @@ export const saveMeeting = async (req, res) => {
             });
         }
 
-        const { meetingCode } = req.body;
+        const { meetingCode , blockchainMeetingId, transactionHash, walletAddress} = req.body;
+        console.log("Incoming meeting data:", req.body);
 
         if (!meetingCode?.trim()) {
             return res.status(400).json({
@@ -29,7 +30,10 @@ export const saveMeeting = async (req, res) => {
 
         const meeting = await Meeting.create({
             userId: user._id.toString(),
-            meetingCode: meetingCode.trim()
+            meetingCode: meetingCode.trim(),
+            blockchainMeetingId: blockchainMeetingId ?? null,
+            transactionHash: transactionHash ?? null,
+            walletAddress: walletAddress ?? null
         });
 
         return res.status(201).json({
