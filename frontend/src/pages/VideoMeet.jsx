@@ -1,10 +1,5 @@
 import {
     authorizeMeetingParticipant,
-    recordMeetingAttendance
-} from "../blockchain/meetingContract.js";
-
-import {
-    authorizeMeetingParticipant,
     recordMeetingAttendance,
     getMeetingOwner
 } from "../blockchain/meetingContract.js";

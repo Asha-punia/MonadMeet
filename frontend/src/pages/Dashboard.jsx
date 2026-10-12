@@ -10,31 +10,54 @@ export default function dashboard() {
     const navigate = useNavigate();
     let [roomId, setRoomId] = useState("");
 
+    
     const createMeeting = async () => {
         const newRoomId = Math.random().toString(36).substring(2, 10).toUpperCase();
 
         try {
+            console.log("Step 1: Connecting wallet and creating blockchain meeting...");
+
             const blockchainMeeting = await createBlockchainMeeting();
-            console.log("Blockchain meeting created:", blockchainMeeting);
+
+            console.log("Step 2: Blockchain meeting created:", blockchainMeeting);
+
+            const API_URL = ["localhost", "127.0.0.1"].includes(window.location.hostname)
+                ? "http://localhost:8000"
+                : (import.meta.env.VITE_API_URL || "https://monadmeet-backend.onrender.com");
+
             const token = localStorage.getItem("token");
-            console.log("API URL:", import.meta.env.VITE_API_URL);
+
+            console.log("Step 3: Saving meeting to backend:", API_URL);
+
             await axios.post(
-                `${import.meta.env.VITE_API_URL}/api/v1/meetings`,
-                { 
+                `${API_URL}/api/v1/meetings`,
+                {
                     meetingCode: newRoomId,
                     blockchainMeetingId: blockchainMeeting.meetingId,
                     transactionHash: blockchainMeeting.transactionHash,
                     walletAddress: blockchainMeeting.walletAddress,
                 },
-                { headers: { authorization: token } }
+                {
+                    headers: { authorization: token },
+                }
             );
 
+            console.log("Step 4: Meeting saved. Navigating to room:", newRoomId);
             navigate(`/${newRoomId}`);
         } catch (error) {
-            console.error("Failed to save meeting:", error);
-            alert("Could not save the meeting. Please try again.");
+            console.error("Create meeting failed:", error);
+            console.error("Error details:", error?.shortMessage || error?.response?.data || error?.message);
+
+            alert(
+                error?.shortMessage ||
+                error?.response?.data?.message ||
+                error?.response?.data?.error ||
+                error?.message ||
+                "Could not create the meeting. Check the browser console."
+            );
         }
     };
+
     const joinMeeting = () => {
         if (!roomId.trim()) {
             alert("Please enter a meeting ID");

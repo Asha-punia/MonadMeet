@@ -11,25 +11,53 @@ const MEETING_CONTRACT_ABI = [
     "function authorizeParticipant(uint256 meetingId, address participant)",
     "function recordAttendence(uint256 meetingId)",
 ];
+
 export async function createBlockchainMeeting() {
-    const { signer, provider, address } = await connectWallet();
-    const contract = new Contract (
-        MEETING_CONTRACT_ADDRESS,
-        MEETING_CONTRACT_ABI,
-        signer
-    );
-    const transaction = await contract.createMeeting();
-    const receipt = await transaction.wait();
-    if(!receipt || receipt.status !== 1) {
-        throw new Error("Blockchain meeting creation failed!");
-    }
-    const meetingCount = await contract.meetingCount();
-    return {
-        meetingId: meetingCount.toString(),
-        transactionHash: receipt.hash,
-        walletAddress: address,
+    try {
+        console.log("Create meeting: requesting wallet...");
+        const { signer, address } = await connectWallet();
+
+        console.log("Create meeting: wallet connected:", address);
+
+        const contract = new Contract(
+            MEETING_CONTRACT_ADDRESS,
+            MEETING_CONTRACT_ABI,
+            signer
+        );
+
+        console.log("Create meeting: sending contract transaction...");
+        const transaction = await contract.createMeeting();
+
+        console.log("Create meeting: transaction submitted:", transaction.hash);
+
+        const receipt = await Promise.race([
+            transaction.wait(),
+            new Promise((_, reject) =>
+                setTimeout(() => reject(new Error(
+                    "Transaction confirmation timed out. Check MetaMask and the Monad explorer."
+                )), 60000)
+            )
+        ]);
+
+        if (!receipt || receipt.status !== 1) {
+            throw new Error("Blockchain meeting creation failed.");
+        }
+
+        console.log("Create meeting: transaction confirmed.");
+
+        const meetingCount = await contract.meetingCount();
+
+        return {
+            meetingId: meetingCount.toString(),
+            transactionHash: receipt.hash,
+            walletAddress: address
+        };
+    } catch (error) {
+        console.error("Blockchain create meeting error:", error);
+        throw error;
     }
 }
+
 
 
 export async function authorizeMeetingParticipant(meetingId, participantAddress) {
