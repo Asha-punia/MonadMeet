@@ -44,10 +44,15 @@ export async function authorizeMeetingParticipant(meetingId, participantAddress)
     // Confirm that the connected wallet owns this meeting.
     const owner = await contract.meetingOwner(meetingId);
 
-    if (owner.toLowerCase() !== address.toLowerCase()) {
-        throw new Error("Only the meeting owner can authorize participants.");
-    }
+    console.log("Meeting ID:", meetingId);
+    console.log("Connected wallet:", address);
+    console.log("On-chain meeting owner:", owner);
 
+    if (owner.toLowerCase() !== address.toLowerCase()) {
+        throw new Error(
+            `Only the meeting owner can authorize participants. Owner: ${owner}`
+        );
+    }
     const transaction = await contract.authorizeParticipant(
         meetingId,
         participantAddress
@@ -110,4 +115,15 @@ export async function recordMeetingAttendance(meetingId) {
         transactionHash: receipt.hash,
         walletAddress: address
     };
+}
+export async function getMeetingOwner(meetingId) {
+    const { provider } = await connectWallet();
+
+    const contract = new Contract(
+        MEETING_CONTRACT_ADDRESS,
+        MEETING_CONTRACT_ABI,
+        provider
+    );
+
+    return await contract.meetingOwner(meetingId);
 }

@@ -3,6 +3,12 @@ import {
     recordMeetingAttendance
 } from "../blockchain/meetingContract.js";
 
+import {
+    authorizeMeetingParticipant,
+    recordMeetingAttendance,
+    getMeetingOwner
+} from "../blockchain/meetingContract.js";
+
 import axios from "axios";
 import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
 import { useEffect, useState, useRef } from "react";
@@ -64,6 +70,7 @@ export default function VideoMeet() {
     const [blockchainLoading, setBlockchainLoading] = useState(false);
     const [blockchainMessage, setBlockchainMessage] = useState("");
     const [attendanceRecorded, setAttendanceRecorded] = useState(false);
+    const [isMeetingOwner, setIsMeetingOwner] = useState(false);
 
     const { url } = useParams();
     let [roomId, setRoomId] = useState(url);
