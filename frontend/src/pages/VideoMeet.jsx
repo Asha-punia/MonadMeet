@@ -1,3 +1,10 @@
+import {
+    authorizeMeetingParticipant,
+    recordMeetingAttendance
+} from "../blockchain/meetingContract.js";
+
+import axios from "axios";
+import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
 import { useEffect, useState, useRef } from "react";
 import io from "socket.io-client";
 import TextField from '@mui/material/TextField';
@@ -25,8 +32,9 @@ import Navbar from "../components/Navbar";
 import ChatOutlinedIcon from '@mui/icons-material/ChatOutlined';
 import Badge from '@mui/material/Badge';
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
-const socket = io(import.meta.env.VITE_API_URL);
+const socket = io(API_URL);
 
 export default function VideoMeet() {
     const pcRef = useRef(null);
@@ -51,6 +59,11 @@ export default function VideoMeet() {
     let [copied, setCopied] = useState(false);
     let [showChat, setShowChat] = useState(false);
     let [unreadMessages, setUnreadMessages] = useState(0);
+    const [blockchainMeetingId, setBlockchainMeetingId] = useState(null);
+    const [participantAddress, setParticipantAddress] = useState("");
+    const [blockchainLoading, setBlockchainLoading] = useState(false);
+    const [blockchainMessage, setBlockchainMessage] = useState("");
+    const [attendanceRecorded, setAttendanceRecorded] = useState(false);
 
     const { url } = useParams();
     let [roomId, setRoomId] = useState(url);
@@ -224,6 +237,67 @@ export default function VideoMeet() {
             }
         }
     }
+    const handleAuthorizeParticipant = async () => {
+        if (!blockchainMeetingId) {
+            setBlockchainMessage("Blockchain meeting ID is not available.");
+            return;
+        }
+
+        if (!/^0x[a-fA-F0-9]{40}$/.test(participantAddress.trim())) {
+            setBlockchainMessage("Enter a valid EVM wallet address.");
+            return;
+        }
+
+        setBlockchainLoading(true);
+        setBlockchainMessage("");
+
+        try {
+            const result = await authorizeMeetingParticipant(
+                blockchainMeetingId,
+                participantAddress.trim()
+            );
+
+            setBlockchainMessage(
+                `Participant authorized. Transaction: ${result.transactionHash}`
+            );
+            setParticipantAddress("");
+        } catch (error) {
+            setBlockchainMessage(
+                error?.shortMessage || error?.message ||
+                "Participant authorization failed."
+            );
+        } finally {
+            setBlockchainLoading(false);
+        }
+    };
+
+    const handleRecordAttendance = async () => {
+        if (!blockchainMeetingId) {
+            setBlockchainMessage("Blockchain meeting ID is not available.");
+            return;
+        }
+
+        setBlockchainLoading(true);
+        setBlockchainMessage("");
+
+        try {
+            const result = await recordMeetingAttendance(blockchainMeetingId);
+
+            setAttendanceRecorded(true);
+            setBlockchainMessage(
+                result.alreadyRecorded
+                    ? "Your attendance has already been recorded."
+                    : `Attendance recorded. Transaction: ${result.transactionHash}`
+            );
+        } catch (error) {
+            setBlockchainMessage(
+                error?.shortMessage || error?.message ||
+                "Could not record attendance."
+            );
+        } finally {
+            setBlockchainLoading(false);
+        }
+    };
     //Chat Section
     const sendMessage = () => {
         if(!message.trim()) {
@@ -346,7 +420,37 @@ export default function VideoMeet() {
             setMessages([]);
         });
     }, []);
+    const loadBlockchainMeeting = async (code) => {
+        try {
+            setBlockchainMessage("");
+            setBlockchainMeetingId(null);
 
+            const response = await axios.get(
+                `${API_URL}/api/v1/meetings/${encodeURIComponent(code)}`
+            );
+
+            const meeting = response.data.meeting;
+
+            if (!meeting?.blockchainMeetingId) {
+                throw new Error("This meeting has no blockchain meeting ID.");
+            }
+
+            setBlockchainMeetingId(meeting.blockchainMeetingId);
+            console.log("Loaded blockchain meeting ID:", meeting.blockchainMeetingId);
+        } catch (error) {
+            console.error("Failed to load blockchain meeting:", error);
+            setBlockchainMessage(
+                error.response?.data?.message ||
+                error.message ||
+                "Could not load blockchain meeting."
+            );
+        }
+    };
+    useEffect(() => {
+        if (url) {
+            loadBlockchainMeeting(url);
+        }
+    }, [url]);
     return (
         <>
         {inCall ? (
@@ -447,6 +551,61 @@ export default function VideoMeet() {
                                     <IconButton onClick={copyMeetingLink}>
                                         {copied ? <DoneIcon /> : <ContentCopyRoundedIcon />}
                                     </IconButton>
+                                </div>
+                                <div className="blockchain-meeting-controls">
+                                    <h3>
+                                        <AccountBalanceWalletIcon
+                                            style={{ verticalAlign: "middle", marginRight: 8 }}
+                                        />
+                                        Monad Meeting
+                                    </h3>
+
+                                    <p>
+                                        Blockchain meeting ID: {blockchainMeetingId ?? "Loading..."}
+                                    </p>
+
+                                    <TextField
+                                        fullWidth
+                                        label="Participant wallet address"
+                                        placeholder="0x..."
+                                        value={participantAddress}
+                                        onChange={(e) => setParticipantAddress(e.target.value)}
+                                        disabled={blockchainLoading || !blockchainMeetingId}
+                                        margin="normal"
+                                    />
+
+                                    <Button
+                                        fullWidth
+                                        variant="contained"
+                                        onClick={handleAuthorizeParticipant}
+                                        disabled={blockchainLoading || !blockchainMeetingId}
+                                    >
+                                        {blockchainLoading ? "Processing..." : "Authorize Participant"}
+                                    </Button>
+
+                                    <Button
+                                        fullWidth
+                                        variant="outlined"
+                                        onClick={handleRecordAttendance}
+                                        disabled={
+                                            blockchainLoading ||
+                                            !blockchainMeetingId ||
+                                            attendanceRecorded
+                                        }
+                                        sx={{ mt: 1 }}
+                                    >
+                                        {attendanceRecorded
+                                            ? "Attendance Recorded"
+                                            : blockchainLoading
+                                                ? "Processing..."
+                                                : "Record My Attendance"}
+                                    </Button>
+
+                                    {blockchainMessage && (
+                                        <p role="status" style={{ overflowWrap: "anywhere" }}>
+                                            {blockchainMessage}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         </div>

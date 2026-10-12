@@ -48,3 +48,33 @@ export const saveMeeting = async (req, res) => {
         });
     }
 };
+
+
+export const getMeetingByCode = async (req, res) => {
+    try {
+        const { meetingCode } = req.params;
+
+        if (!meetingCode?.trim()) {
+            return res.status(400).json({
+                message: "Meeting code is required."
+            });
+        }
+
+        const meeting = await Meeting.findOne({
+            meetingCode: meetingCode.trim().toUpperCase()
+        });
+
+        if (!meeting) {
+            return res.status(404).json({
+                message: "Meeting not found."
+            });
+        }
+
+        return res.status(200).json({ meeting });
+    } catch (error) {
+        console.error("Failed to retrieve meeting:", error);
+        return res.status(500).json({
+            message: "Failed to retrieve meeting."
+        });
+    }
+};

@@ -1,7 +1,12 @@
 import { Router } from "express";
-import { saveMeeting } from "../controllers/meetings.js";
+import {
+    saveMeeting,
+    getMeetingByCode
+} from "../controllers/meetings.js";
+
 const router = Router();
 
 router.post("/", saveMeeting);
+router.get("/:meetingCode", getMeetingByCode);
 
 export default router;
