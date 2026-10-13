@@ -1,6 +1,15 @@
-import { Contract } from "ethers";
-import { connectWallet } from "./wallet";
-export const MEETING_CONTRACT_ADDRESS = "0x7dFc511c776B5Be2B9c6e3014df9413A25d6c357";
+import {
+    Contract,
+    JsonRpcProvider,
+} from "ethers";
+
+import { connectWallet } from "./wallet.js";
+
+export const MEETING_CONTRACT_ADDRESS =
+    "0x7dFc511c776B5Be2B9c6e3014df9413A25d6c357";
+
+const MONAD_RPC_URL = "https://testnet-rpc.monad.xyz";
+
 const MEETING_CONTRACT_ABI = [
     "function createMeeting() public returns (uint256)",
     "function meetingCount() view returns (uint256)",
@@ -12,9 +21,25 @@ const MEETING_CONTRACT_ABI = [
     "function recordAttendence(uint256 meetingId)",
 ];
 
+function getReadOnlyContract() {
+    const provider = new JsonRpcProvider(MONAD_RPC_URL);
+
+    return new Contract(
+        MEETING_CONTRACT_ADDRESS,
+        MEETING_CONTRACT_ABI,
+        provider
+    );
+}
+
+export async function getMeetingOwner(meetingId) {
+    const contract = getReadOnlyContract();
+    return await contract.meetingOwner(meetingId);
+}
+
 export async function createBlockchainMeeting() {
     try {
         console.log("Create meeting: requesting wallet...");
+
         const { signer, address } = await connectWallet();
 
         console.log("Create meeting: wallet connected:", address);
@@ -25,19 +50,13 @@ export async function createBlockchainMeeting() {
             signer
         );
 
-        console.log("Create meeting: sending contract transaction...");
+        console.log("Create meeting: requesting transaction approval...");
+
         const transaction = await contract.createMeeting();
 
-        console.log("Create meeting: transaction submitted:", transaction.hash);
+        console.log("Transaction submitted:", transaction.hash);
 
-        const receipt = await Promise.race([
-            transaction.wait(),
-            new Promise((_, reject) =>
-                setTimeout(() => reject(new Error(
-                    "Transaction confirmation timed out. Check MetaMask and the Monad explorer."
-                )), 60000)
-            )
-        ]);
+        const receipt = await transaction.wait();
 
         if (!receipt || receipt.status !== 1) {
             throw new Error("Blockchain meeting creation failed.");
@@ -50,7 +69,7 @@ export async function createBlockchainMeeting() {
         return {
             meetingId: meetingCount.toString(),
             transactionHash: receipt.hash,
-            walletAddress: address
+            walletAddress: address,
         };
     } catch (error) {
         console.error("Blockchain create meeting error:", error);
@@ -58,9 +77,10 @@ export async function createBlockchainMeeting() {
     }
 }
 
-
-
-export async function authorizeMeetingParticipant(meetingId, participantAddress) {
+export async function authorizeMeetingParticipant(
+    meetingId,
+    participantAddress
+) {
     const { signer, address } = await connectWallet();
 
     const contract = new Contract(
@@ -69,18 +89,14 @@ export async function authorizeMeetingParticipant(meetingId, participantAddress)
         signer
     );
 
-    // Confirm that the connected wallet owns this meeting.
     const owner = await contract.meetingOwner(meetingId);
-
-    console.log("Meeting ID:", meetingId);
-    console.log("Connected wallet:", address);
-    console.log("On-chain meeting owner:", owner);
 
     if (owner.toLowerCase() !== address.toLowerCase()) {
         throw new Error(
             `Only the meeting owner can authorize participants. Owner: ${owner}`
         );
     }
+
     const transaction = await contract.authorizeParticipant(
         meetingId,
         participantAddress
@@ -94,7 +110,7 @@ export async function authorizeMeetingParticipant(meetingId, participantAddress)
 
     return {
         transactionHash: receipt.hash,
-        participantAddress
+        participantAddress,
     };
 }
 
@@ -127,7 +143,7 @@ export async function recordMeetingAttendance(meetingId) {
     if (alreadyAttended) {
         return {
             alreadyRecorded: true,
-            walletAddress: address
+            walletAddress: address,
         };
     }
 
@@ -138,20 +154,16 @@ export async function recordMeetingAttendance(meetingId) {
         throw new Error("Attendance recording failed.");
     }
 
+    // Verify attendance on-chain after confirmation.
+    const recorded = await contract.attended(meetingId, address);
+
+    if (!recorded) {
+        throw new Error("Transaction confirmed, but attendance was not verified.");
+    }
+
     return {
         alreadyRecorded: false,
         transactionHash: receipt.hash,
-        walletAddress: address
+        walletAddress: address,
     };
-}
-export async function getMeetingOwner(meetingId) {
-    const { provider } = await connectWallet();
-
-    const contract = new Contract(
-        MEETING_CONTRACT_ADDRESS,
-        MEETING_CONTRACT_ABI,
-        provider
-    );
-
-    return await contract.meetingOwner(meetingId);
 }
