@@ -7,6 +7,7 @@ import { AuthContext } from "../context/AuthContext";
 import Button from "@mui/material/Button";
 import { connectWallet } from "../blockchain/wallet.js";
 
+
 import "./Navbar.css";
 
 const Navbar = () => {
@@ -14,16 +15,22 @@ const Navbar = () => {
     let [menuOpen, setMenuOpen] = useState(false);
     let [walletAddress, setWalletAddress] = useState("");
     let [walletError, setWalletError] = useState("");
+    const [walletConnecting, setWalletConnecting] = useState(false);
     const handleConnectWallet = async () => {
+        if (walletConnecting) return;
+
+        setWalletConnecting(true);
         setWalletError("");
+
         try {
             const wallet = await connectWallet();
             setWalletAddress(wallet.address);
-        }catch(error) {
+        } catch (error) {
             setWalletError(error.message || "Wallet connection failed!");
+        } finally {
+            setWalletConnecting(false);
         }
-        
-    }
+    };
     
     return (
         <>
@@ -47,8 +54,12 @@ const Navbar = () => {
                             {`${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`}
                         </Button>
                     ) : (
-                        <Button onClick={handleConnectWallet} className="nav-btn">
-                            Connect Wallet
+                        <Button
+                            onClick={handleConnectWallet}
+                            className="nav-btn"
+                            disabled={walletConnecting}
+                        >
+                            {walletConnecting ? "Connecting..." : "Connect Wallet"}
                         </Button>
                     )}
                     {user ? (
@@ -83,8 +94,12 @@ const Navbar = () => {
                                 {`${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`}
                             </Button>
                         ) : (
-                            <Button onClick={handleConnectWallet} className="nav-btn">
-                                Connect Wallet
+                            <Button
+                                onClick={handleConnectWallet}
+                                className="nav-btn"
+                                disabled={walletConnecting}
+                            >
+                                {walletConnecting ? "Connecting..." : "Connect Wallet"}
                             </Button>
                         )}
                         {user ? (
